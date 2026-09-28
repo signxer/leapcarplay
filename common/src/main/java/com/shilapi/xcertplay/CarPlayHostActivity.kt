@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.graphics.Typeface
+import android.hardware.display.DisplayManager
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaCodecList
 import android.media.MediaFormat
@@ -23,6 +24,8 @@ import android.text.InputType
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.Log
+import android.util.DisplayMetrics
+import android.view.Display
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.Surface
@@ -259,6 +262,16 @@ class CarPlayHostActivity : ComponentActivity() {
     private var controller: CarPlayController? = null
     private var currentSurface: Surface? = null
     private var currentSurfaceTexture: SurfaceTexture? = null
+    private var clusterDisplay: Display? = null
+    private var clusterDisplaySize: DisplaySize? = null
+    private var clusterPresentation: CarPlaySecondaryDisplay? = null
+    private var clusterSurface: Surface? = null
+    private val displayManager by lazy { getSystemService(DisplayManager::class.java) }
+    private val externalDisplayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = refreshClusterDisplay()
+        override fun onDisplayRemoved(displayId: Int) = refreshClusterDisplay()
+        override fun onDisplayChanged(displayId: Int) = refreshClusterDisplay()
+    }
     private var activeDisplaySize: DisplaySize? = null
     private var pendingDisplaySize: DisplaySize? = null
     private var displayScaleTenths = CarPlayDisplayScale.DEFAULT_TENTHS
@@ -358,7 +371,6 @@ class CarPlayHostActivity : ComponentActivity() {
             if (currentSurfaceTexture !== texture) return true
             currentSurface?.let { surface ->
                 sink?.clearSurface(SCREEN_TYPE_MAIN, surface)
-                sink?.clearSurface(SCREEN_TYPE_ALT, surface)
                 surface.release()
             }
             currentSurface = null
@@ -558,6 +570,12 @@ class CarPlayHostActivity : ComponentActivity() {
         applyFullscreenMode()
     }
 
+    override fun onStart() {
+        super.onStart()
+        displayManager.registerDisplayListener(externalDisplayListener, mainHandler)
+        refreshClusterDisplay()
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) applyFullscreenMode()
@@ -565,6 +583,7 @@ class CarPlayHostActivity : ComponentActivity() {
 
     override fun onStop() {
         // The controller, USB/iAP2 link, and VPN attachment intentionally outlive the UI.
+        displayManager.unregisterDisplayListener(externalDisplayListener)
         super.onStop()
     }
 
@@ -587,9 +606,14 @@ class CarPlayHostActivity : ComponentActivity() {
     override fun onDestroy() {
         mainHandler.removeCallbacks(applyDisplaySize)
         mainHandler.removeCallbacks(expireOldLogLines)
+        displayManager.unregisterDisplayListener(externalDisplayListener)
+        clusterPresentation?.dismiss()
+        clusterPresentation = null
+        clusterDisplay = null
+        clusterDisplaySize = null
+        clusterSurface = null
         currentSurface?.let { surface ->
             sink?.clearSurface(SCREEN_TYPE_MAIN, surface)
-            sink?.clearSurface(SCREEN_TYPE_ALT, surface)
             surface.release()
         }
         currentSurface = null
@@ -2599,12 +2623,33 @@ class CarPlayHostActivity : ComponentActivity() {
         appendLog(requestSummary)
         appendLog(support.details)
         appendLog(effectiveSummary)
+        val cluster = clusterDisplaySize?.let { clusterSize ->
+            val metrics = DisplayMetrics()
+            clusterDisplay?.getRealMetrics(metrics)
+            val widthMm = (if (metrics.xdpi > 0f) {
+                (clusterSize.width * 25.4f / metrics.xdpi).toInt()
+            } else {
+                AirPlayDisplaySettings.DEFAULT_WIDTH_PHYSICAL_MM
+            }).coerceIn(
+                AirPlayDisplaySettings.MIN_REPORTED_PHYSICAL_MM,
+                AirPlayDisplaySettings.MAX_REPORTED_PHYSICAL_MM,
+            )
+            AirPlayDisplayConfig(
+                widthPixels = clusterSize.width,
+                heightPixels = clusterSize.height,
+                widthPhysicalMm = widthMm,
+                heightPhysicalMm = (widthMm.toDouble() * clusterSize.height / clusterSize.width)
+                    .toInt().coerceAtLeast(1),
+                fps = fps,
+            )
+        }
         return AirPlayConfig(
             deviceName = "DiPlay",
             deviceId = DiPlayBootstrap.deviceId(airPlayIdentity),
             btMac = DiPlayBluetooth.localAddress(this) ?: DiPlayBootstrap.deviceId(airPlayIdentity),
             sourceVersion = "950.7.1",
             main = display,
+            cluster = cluster,
             rightHandDrive = rightHandDrive,
             hevc = hevcEnabled,
             microphone = microphoneAvailable,
@@ -2772,6 +2817,8 @@ class CarPlayHostActivity : ComponentActivity() {
             surface = null,
             videoWidth = videoWidth,
             videoHeight = videoHeight,
+            alternateVideoWidth = clusterDisplaySize?.width,
+            alternateVideoHeight = clusterDisplaySize?.height,
             preferSoftwareHevcDecoder = hevcSoftwareDecoderEnabled,
             advancedAudioChannelMapping = advancedAudioChannelMapping,
             onScreenStreamActiveChanged = { type, active ->
@@ -2933,6 +2980,7 @@ class CarPlayHostActivity : ComponentActivity() {
                 "(${CarPlayDisplayScale.label(displayScaleTenths)}) " +
                 "physical=${airPlayConfig.main.widthPhysicalMm}x" +
                 "${airPlayConfig.main.heightPhysicalMm}mm " +
+                "cluster=${airPlayConfig.cluster?.let { "${it.widthPixels}x${it.heightPixels}" } ?: "off"} " +
                 "video=${if (airPlayConfig.hevc) "HEVC" else "H.264"} " +
                 "decoder=${if (airPlayConfig.hevc && hevcSoftwareDecoderEnabled) "software" else "hardware"} " +
                 "microphone=${airPlayConfig.microphone} " +
@@ -2957,6 +3005,7 @@ class CarPlayHostActivity : ComponentActivity() {
         )
         sink = renderer
         currentSurface?.let(::attachSurface)
+        clusterSurface?.let { renderer.setSurface(SCREEN_TYPE_ALT, it) }
         val media = createMediaEngine(renderer)
         val pairings = AirPlayPersistence.loadPairings(this) { id, key ->
             AirPlayPersistence.savePairing(this, id, key)
@@ -3212,9 +3261,71 @@ class CarPlayHostActivity : ComponentActivity() {
         }
     }
 
+    private fun refreshClusterDisplay() {
+        val candidates = displayManager
+            .getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+            .filter { it.displayId != Display.DEFAULT_DISPLAY }
+        val target = candidates.firstOrNull {
+            it.name.contains("HDMI2", ignoreCase = true) ||
+                it.name.contains("HDMI 2", ignoreCase = true)
+        } ?: candidates.singleOrNull()
+        val targetSize = target?.let { display ->
+            val metrics = DisplayMetrics()
+            display.getRealMetrics(metrics)
+            if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
+                DisplaySize(metrics.widthPixels, metrics.heightPixels)
+            } else {
+                null
+            }
+        }
+        val unchanged = clusterDisplay?.displayId == target?.displayId &&
+            clusterDisplaySize == targetSize
+        if (unchanged) return
+
+        val previous = clusterDisplaySize
+        clusterPresentation?.dismiss()
+        clusterPresentation = null
+        clusterDisplay = target.takeIf { targetSize != null }
+        clusterDisplaySize = targetSize
+        if (target != null && targetSize != null) {
+            lateinit var presentation: CarPlaySecondaryDisplay
+            try {
+                presentation = CarPlaySecondaryDisplay(this, target) { surface ->
+                    if (clusterPresentation === presentation) onClusterSurfaceChanged(surface)
+                }
+                clusterPresentation = presentation
+                presentation.show()
+                appendLog("CarPlay secondary display detected: ${target.name} ${targetSize.width}x${targetSize.height}")
+            } catch (error: Exception) {
+                clusterPresentation?.dismiss()
+                clusterPresentation = null
+                clusterDisplay = null
+                clusterDisplaySize = null
+                appendLog("CarPlay secondary display unavailable: ${error.javaClass.simpleName}")
+            }
+        } else {
+            appendLog("CarPlay secondary display unavailable")
+        }
+
+        val current = clusterDisplaySize
+        if (previous != current && controller != null) {
+            restartCarPlay(
+                if (current == null) "CarPlay secondary display disconnected"
+                else "CarPlay secondary display changed to ${current.width}x${current.height}",
+            )
+        }
+    }
+
+    private fun onClusterSurfaceChanged(surface: Surface?) {
+        val previous = clusterSurface
+        if (previous === surface) return
+        if (previous != null) sink?.clearSurface(SCREEN_TYPE_ALT, previous)
+        clusterSurface = surface
+        if (surface != null) sink?.setSurface(SCREEN_TYPE_ALT, surface)
+    }
+
     private fun attachSurface(surface: Surface) {
         sink?.setSurface(SCREEN_TYPE_MAIN, surface)
-        sink?.setSurface(SCREEN_TYPE_ALT, surface)
     }
 
     private fun onHostTouch(view: View, event: MotionEvent): Boolean {
@@ -3298,6 +3409,10 @@ class CarPlayHostActivity : ComponentActivity() {
             } else {
                 activeScreenStreamTypes.remove(type)
             }
+            appendLog(
+                "CarPlay ${if (type == SCREEN_TYPE_ALT) "secondary" else "main"} " +
+                    "screen stream ${if (active) "started" else "stopped"}",
+            )
             updateDebugOverlays()
         }
     }

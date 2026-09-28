@@ -12,6 +12,10 @@ This public preview is an independent receiver, not an Apple-certified CarPlay a
 | Wi-Fi | Prefer 5 GHz without an established station connection; align to a supported existing station channel; explicit 2.4 GHz fallback for firmware that rejects 5 GHz or automatic channel selection |
 | Video | Default H.264 / 30 fps; 60 fps and HEVC increase device-specific demands |
 
+## CarPlay secondary display
+
+When Android exposes a presentation display named HDMI2, DiPlay advertises it as CarPlay's optional cluster display and routes the alternate-screen stream to that display. If there is no HDMI2-named display, DiPlay uses the only available presentation display; when several unnamed presentation displays exist, it leaves the cluster output disabled. The iPhone controls the content of the alternate stream, so a connected display alone does not guarantee that every navigation app will send a map view to it. The main CarPlay screen remains on the head unit display.
+
 ## BYD HUD and car hotspot
 
 See [BYD navigation](BYD_NAVIGATION.md) for the exact verified firmware and lifecycle limits. Car hotspot now starts CarPlay on the development car using scoped IPv6. The phone must join the configured car hotspot. Neither result guarantees support on every firmware.

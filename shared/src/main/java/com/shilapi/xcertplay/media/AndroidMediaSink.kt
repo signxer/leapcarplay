@@ -34,6 +34,8 @@ class AndroidMediaSink(
     surface: Surface? = null,
     private val videoWidth: Int = 1280,
     private val videoHeight: Int = 720,
+    private val alternateVideoWidth: Int? = null,
+    private val alternateVideoHeight: Int? = null,
     private val preferSoftwareHevcDecoder: Boolean = false,
     private val advancedAudioChannelMapping: Boolean = false,
     onScreenStreamActiveChanged: ((Int, Boolean) -> Unit)? = null,
@@ -157,10 +159,14 @@ class AndroidMediaSink(
 
     private fun videoDecoder(type: Int): VideoDecoder =
         videoDecoders.computeIfAbsent(type) {
+            val useAlternateSize =
+                type == ALT_SCREEN_TYPE &&
+                    (alternateVideoWidth ?: 0) > 0 &&
+                    (alternateVideoHeight ?: 0) > 0
             VideoDecoder(
                 surfaces[type] ?: defaultSurface,
-                videoWidth,
-                videoHeight,
+                if (useAlternateSize) alternateVideoWidth!! else videoWidth,
+                if (useAlternateSize) alternateVideoHeight!! else videoHeight,
                 preferSoftwareHevcDecoder,
                 requestKeyFrame = { requestVideoRecovery(type) },
                 report = { videoDiagnosticHandlers[type]?.invoke(it) },
@@ -472,6 +478,7 @@ private class VideoDecoder(
 
     private companion object {
         const val TAG = "xcertplay-usb"
+        const val ALT_SCREEN_TYPE = 111
         const val MAX_INPUT_SIZE = 8 * 1024 * 1024
         const val INPUT_TIMEOUT_US = 10_000L
         const val MAX_FRAME_AGE_NS = 250_000_000L
