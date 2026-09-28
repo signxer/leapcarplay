@@ -29,7 +29,7 @@ Previous physical validation in the inherited compatibility document was perform
 1. **P1, vehicle validation:** measure rendered frame rate and decoder errors with main display plus 720×720 HDMI2 active at 60 fps, including sustained navigation and reconnect. Record thermal behavior, then repeat at 30 fps. Do not infer hardware throughput from Snapdragon 8155 specifications alone.
 2. **P1, vehicle validation:** unplug/reconnect HDMI2 during an active session and verify main-screen continuity, cluster stream recovery, audio and clean reconnection. Confirm a navigation app actually sends a map to the alternate stream.
 3. **P2, maintainability:** `CarPlayHostActivity` and `CarPlayController` remain very large classes. This change extracts and tests display selection and surface ownership, but a broader controller/session split needs separate seams and regression coverage before it is safe to undertake.
-4. **P2, build coverage:** CI now builds both APK variants and runs the existing unit tests and lint. The local checkout used for this review had no Android SDK installed, so Gradle could not configure Android projects locally; CI status must be checked after upload.
+4. **P2, build coverage:** CI is configured to build both APK variants and run the existing unit tests and lint. The local checkout used for this review had no Android SDK installed, so Gradle could not configure Android projects locally. After upload, GitHub reported no workflow runs or commit checks for this commit, so the Android build result remains unverified.
 
 ## Validation limits
 
