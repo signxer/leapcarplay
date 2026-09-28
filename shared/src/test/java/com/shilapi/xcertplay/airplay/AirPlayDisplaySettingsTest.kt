@@ -5,6 +5,12 @@ import org.junit.Test
 
 class AirPlayDisplaySettingsTest {
     @Test
+    fun defaultsToSixtyFramesPerSecondWithThirtyAsSupportedMinimum() {
+        assertEquals(60, AirPlayDisplaySettings.DEFAULT_FPS)
+        assertEquals(30, AirPlayDisplaySettings.MIN_FPS)
+    }
+
+    @Test
     fun maximumObservedWidthScalesPhysicalSizeWithCurrentActivityWidth() {
         val size = AirPlayDisplaySettings.resolvePhysicalSizeMm(
             currentWidthPixels = 768,

@@ -396,7 +396,7 @@ class LeapCarPlayActivity : ComponentActivity() {
         if (wireless && LeapCarPlayPreferences.phoneAddress(this) == null) {
             pendingWireless = true; choosePhone(); return
         }
-        val preferences = getSharedPreferences("diplay", MODE_PRIVATE)
+        val preferences = getSharedPreferences("leapcarplay", MODE_PRIVATE)
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED && !preferences.getBoolean("notification_asked", false)) {
             preferences.edit().putBoolean("notification_asked", true).apply()
             notificationTransport = wireless
@@ -579,7 +579,7 @@ class LeapCarPlayActivity : ComponentActivity() {
                         .setNegativeButton("Close", null).show()
                 }
             }
-        }, "diplay-export").start()
+        }, "leapcarplay-export").start()
     }
     private fun permissionHelp(title: String, body: String) {
         AlertDialog.Builder(this).setTitle(title).setMessage(body).setPositiveButton("App settings") { _, _ ->

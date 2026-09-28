@@ -49,7 +49,7 @@ internal object LeapCarPlayBootstrap {
 }
 
 internal object LeapCarPlayPreferences {
-    private fun prefs(context: Context) = context.getSharedPreferences("diplay", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = context.getSharedPreferences("leapcarplay", Context.MODE_PRIVATE)
     fun phoneAddress(context: Context): String? = prefs(context).getString("phone_address", null)
     fun phoneName(context: Context): String = prefs(context).getString("phone_name", null) ?: "Your iPhone"
     fun savePhone(context: Context, address: String, name: String) {

@@ -10,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shilapi.xcertplay"
+        applicationId = "com.signxer.leapcarplay.automotive"
         minSdk = 28
         targetSdk = 37
         versionCode = 1201

@@ -2,8 +2,10 @@ package com.shilapi.xcertplay.media
 
 import android.view.Surface
 import com.shilapi.xcertplay.airplay.VideoCodec
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.ArrayDeque
+import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.withLock
 
 internal sealed interface VideoJob {
     data class Config(val codec: VideoCodec, val codecData: ByteArray) : VideoJob
@@ -28,26 +30,65 @@ internal class VideoDecodeQueue(
     private val maxFrames: Int = 60,
     private val maxBytes: Int = 8 * 1024 * 1024,
 ) {
-    private val jobs = LinkedBlockingQueue<VideoJob>()
+    private val lock = ReentrantLock()
+    private val available = lock.newCondition()
+    private val jobs = ArrayDeque<VideoJob>()
+    private var queuedFrameCount = 0
+    private var queuedFrameBytes = 0L
 
-    @Synchronized fun offer(job: VideoJob) {
-        if (job is VideoJob.Frame) {
-            val frames = jobs.filterIsInstance<VideoJob.Frame>()
-            if (frames.size >= maxFrames || frames.sumOf { it.nalus.size.toLong() } + job.nalus.size > maxBytes) {
-                discardFrames()
-                jobs.offer(VideoJob.Resync)
+    fun offer(job: VideoJob) {
+        lock.withLock {
+            if (job is VideoJob.Frame) {
+                if (queuedFrameCount >= maxFrames || queuedFrameBytes + job.nalus.size > maxBytes) {
+                    discardFramesLocked()
+                    jobs.addLast(VideoJob.Resync)
+                }
+                // A single oversized frame is also a lost reference chain.
+                if (job.nalus.size > maxBytes) {
+                    available.signal()
+                    return
+                }
+                queuedFrameCount++
+                queuedFrameBytes += job.nalus.size
             }
-            // A single oversized frame is also a lost reference chain.
-            if (job.nalus.size > maxBytes) return
+            jobs.addLast(job)
+            available.signal()
         }
-        jobs.offer(job)
     }
 
-    @Synchronized fun discardFrames() {
-        jobs.removeIf { it is VideoJob.Frame || it is VideoJob.Resync }
+    fun discardFrames() {
+        lock.withLock { discardFramesLocked() }
     }
 
-    fun poll(timeoutMillis: Long): VideoJob? = jobs.poll(timeoutMillis, TimeUnit.MILLISECONDS)
+    @Throws(InterruptedException::class)
+    fun poll(timeoutMillis: Long): VideoJob? = lock.withLock {
+        var remainingNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis.coerceAtLeast(0))
+        while (jobs.isEmpty() && remainingNanos > 0) {
+            remainingNanos = available.awaitNanos(remainingNanos)
+        }
+        if (jobs.isEmpty()) return null
+        jobs.removeFirst().also { job ->
+            if (job is VideoJob.Frame) {
+                queuedFrameCount--
+                queuedFrameBytes -= job.nalus.size
+            }
+        }
+    }
+
+    private fun discardFramesLocked() {
+        val iterator = jobs.iterator()
+        while (iterator.hasNext()) {
+            when (val job = iterator.next()) {
+                is VideoJob.Frame -> {
+                    iterator.remove()
+                    queuedFrameCount--
+                    queuedFrameBytes -= job.nalus.size
+                }
+                VideoJob.Resync -> iterator.remove()
+                else -> Unit
+            }
+        }
+    }
 }
 
 /** Drain output while waiting for input: full output buffers can otherwise starve input forever. */

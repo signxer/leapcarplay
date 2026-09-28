@@ -1,6 +1,6 @@
 # LeapCarPlay
 
-**LeapCarPlay is a community fork of DiPlay/xcertplay**, adapted for Leapmotor Android head units with a separate CarPlay cluster display. The Android application ID remains `com.shihab.diplay` to preserve the existing Wi-Fi Direct namespace and integrations.
+**LeapCarPlay is a community fork of DiPlay/xcertplay**, adapted for Leapmotor Android head units with a separate CarPlay cluster display. The mobile APK ID is `com.signxer.leapcarplay`; the Automotive APK ID is `com.signxer.leapcarplay.automotive`.
 
 [Source code](https://github.com/signxer/leapcarplay) · [Report a problem](https://github.com/signxer/leapcarplay/issues/new/choose)
 
@@ -11,6 +11,8 @@
 When Android exposes an HDMI2 presentation display, LeapCarPlay advertises CarPlay's optional cluster stream and renders it on that display. The iPhone and navigation app control whether map content is sent to the cluster. See [compatibility notes](docs/COMPATIBILITY.md).
 
 This fork does not yet publish a LeapCarPlay APK release. Build instructions are in [docs/BUILD.md](docs/BUILD.md).
+
+The new application IDs create fresh Android app storage. The previous DiPlay app can remain installed, but preferences and phone pairings must be configured again.
 
 ## Upstream 0.2.0 preview notes
 

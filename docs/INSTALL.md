@@ -1,6 +1,6 @@
 # Install and connect
 
-No LeapCarPlay APK release is published yet. Build the app using [the build instructions](BUILD.md), then install the generated APK on the Android head unit. Do not install it on the iPhone.
+No distributable LeapCarPlay APK release is published yet. The source-only debug APK does not include CarPlay authentication assets. To install a working build, follow the release packaging steps in [the build instructions](BUILD.md). Its application ID is `com.signxer.leapcarplay`; Automotive builds use `com.signxer.leapcarplay.automotive`. The prior `com.shihab.diplay` app can remain installed, but it has separate storage, so pair the iPhone and configure preferences again. Do not install the APK on the iPhone.
 
 1. Park the car and install the APK using the method supported by the head unit.
 2. Open LeapCarPlay. Grant the permissions requested for the features you use: Bluetooth/Nearby devices, Wi-Fi/Location on older Android, and microphone for Siri/calls. Allow notifications for connection controls.
@@ -20,7 +20,7 @@ Connect the iPhone to a USB **data** port with a data-capable cable and choose *
 
 Swipe down with three fingers in CarPlay to open LeapCarPlay settings, or return to the home screen. Icon/text size, resolution and frame rate use **Apply and reconnect** during an active session. A selection alone does not apply; Cancel preserves the old setting. When disconnected, **Save** applies to the next connection. Other settings also apply on the next connection.
 
-Start with 30 fps, Efficient video (HEVC) off and Default icon/text size. Try 80% or 60% resolution for a slower head unit. Some iPhone/head-unit combinations still ignore icon/text scaling.
+The default is 60 fps with Efficient video (HEVC) off. If the head unit drops frames or becomes too warm, switch to 30 fps; reducing the CarPlay resolution is another fallback. Some iPhone/head-unit combinations still ignore icon/text scaling.
 
 ## Connection recovery and reports
 

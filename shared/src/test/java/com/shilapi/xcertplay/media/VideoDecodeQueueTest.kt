@@ -45,6 +45,16 @@ class VideoDecodeQueueTest {
         assertNull(queue.poll(0))
     }
 
+    @Test fun pollingFramesImmediatelyReturnsTheirCapacity() {
+        val queue = VideoDecodeQueue(maxFrames = 1, maxBytes = 4)
+        queue.offer(VideoJob.Frame(ByteArray(4)))
+        assertEquals(4, (queue.poll(0) as VideoJob.Frame).nalus.size)
+
+        queue.offer(VideoJob.Frame(ByteArray(4)))
+        assertEquals(4, (queue.poll(0) as VideoJob.Frame).nalus.size)
+        assertNull(queue.poll(0))
+    }
+
     @Test fun fullOutputMustBeDrainedWhileRetryingTheSameInput() {
         var heldOutputs = 2
         var dequeues = 0

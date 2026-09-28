@@ -265,7 +265,11 @@ class CarPlayHostActivity : ComponentActivity() {
     private var clusterDisplay: Display? = null
     private var clusterDisplaySize: DisplaySize? = null
     private var clusterPresentation: CarPlaySecondaryDisplay? = null
-    private var clusterSurface: Surface? = null
+    private val clusterSurfaceBinding = OutputSurfaceBinding<Surface>(
+        detach = { sink?.clearSurface(SCREEN_TYPE_ALT, it) },
+        attach = { sink?.setSurface(SCREEN_TYPE_ALT, it) },
+    )
+    private var displayListenerRegistered = false
     private val displayManager by lazy { getSystemService(DisplayManager::class.java) }
     private val externalDisplayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = refreshClusterDisplay()
@@ -572,7 +576,10 @@ class CarPlayHostActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        displayManager.registerDisplayListener(externalDisplayListener, mainHandler)
+        if (!displayListenerRegistered) {
+            displayManager.registerDisplayListener(externalDisplayListener, mainHandler)
+            displayListenerRegistered = true
+        }
         refreshClusterDisplay()
     }
 
@@ -583,7 +590,7 @@ class CarPlayHostActivity : ComponentActivity() {
 
     override fun onStop() {
         // The controller, USB/iAP2 link, and VPN attachment intentionally outlive the UI.
-        displayManager.unregisterDisplayListener(externalDisplayListener)
+        unregisterExternalDisplayListener()
         super.onStop()
     }
 
@@ -606,12 +613,12 @@ class CarPlayHostActivity : ComponentActivity() {
     override fun onDestroy() {
         mainHandler.removeCallbacks(applyDisplaySize)
         mainHandler.removeCallbacks(expireOldLogLines)
-        displayManager.unregisterDisplayListener(externalDisplayListener)
+        unregisterExternalDisplayListener()
         clusterPresentation?.dismiss()
         clusterPresentation = null
         clusterDisplay = null
         clusterDisplaySize = null
-        clusterSurface = null
+        clusterSurfaceBinding.set(null)
         currentSurface?.let { surface ->
             sink?.clearSurface(SCREEN_TYPE_MAIN, surface)
             surface.release()
@@ -3005,7 +3012,7 @@ class CarPlayHostActivity : ComponentActivity() {
         )
         sink = renderer
         currentSurface?.let(::attachSurface)
-        clusterSurface?.let { renderer.setSurface(SCREEN_TYPE_ALT, it) }
+        clusterSurfaceBinding.current?.let { renderer.setSurface(SCREEN_TYPE_ALT, it) }
         val media = createMediaEngine(renderer)
         val pairings = AirPlayPersistence.loadPairings(this) { id, key ->
             AirPlayPersistence.savePairing(this, id, key)
@@ -3262,22 +3269,26 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun refreshClusterDisplay() {
-        val candidates = displayManager
+        val displays = displayManager
             .getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
             .filter { it.displayId != Display.DEFAULT_DISPLAY }
-        val target = candidates.firstOrNull {
-            it.name.contains("HDMI2", ignoreCase = true) ||
-                it.name.contains("HDMI 2", ignoreCase = true)
-        } ?: candidates.singleOrNull()
-        val targetSize = target?.let { display ->
+        val candidateSizes = displays.mapNotNull { display ->
             val metrics = DisplayMetrics()
             display.getRealMetrics(metrics)
             if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
-                DisplaySize(metrics.widthPixels, metrics.heightPixels)
+                PresentationDisplayCandidate(
+                    displayId = display.displayId,
+                    name = display.name,
+                    widthPixels = metrics.widthPixels,
+                    heightPixels = metrics.heightPixels,
+                )
             } else {
                 null
             }
         }
+        val selected = PresentationDisplaySelector.select(candidateSizes)
+        val target = selected?.let { candidate -> displays.firstOrNull { it.displayId == candidate.displayId } }
+        val targetSize = selected?.let { DisplaySize(it.widthPixels, it.heightPixels) }
         val unchanged = clusterDisplay?.displayId == target?.displayId &&
             clusterDisplaySize == targetSize
         if (unchanged) return
@@ -3316,12 +3327,14 @@ class CarPlayHostActivity : ComponentActivity() {
         }
     }
 
+    private fun unregisterExternalDisplayListener() {
+        if (!displayListenerRegistered) return
+        displayManager.unregisterDisplayListener(externalDisplayListener)
+        displayListenerRegistered = false
+    }
+
     private fun onClusterSurfaceChanged(surface: Surface?) {
-        val previous = clusterSurface
-        if (previous === surface) return
-        if (previous != null) sink?.clearSurface(SCREEN_TYPE_ALT, previous)
-        clusterSurface = surface
-        if (surface != null) sink?.setSurface(SCREEN_TYPE_ALT, surface)
+        clusterSurfaceBinding.set(surface)
     }
 
     private fun attachSurface(surface: Surface) {
@@ -3466,7 +3479,7 @@ class CarPlayHostActivity : ComponentActivity() {
         "${SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date(nowMillis))}  $message"
 
     private fun initializeSessionLog() {
-        val logFile = File(File(filesDir, "logs"), "diplay.log")
+        val logFile = File(File(filesDir, "logs"), "leapcarplay.log")
         val activeLog = SessionLogFile(logFile)
         runCatching {
             activeLog.reset(

@@ -6,16 +6,16 @@ import java.nio.file.Files
 
 class DiagnosticRedactorTest {
     @Test fun savedDriveReportKeepsMediaPerformanceCounters() {
-        val folder = Files.createTempDirectory("diplay-media-report").toFile()
+        val folder = Files.createTempDirectory("leapcarplay-media-report").toFile()
         try {
             val audio = "audio stats audioType=media codec=AAC_LC rx=215 dropped=0 underruns=+3 queue=2 playing=true maxGapMs=420 sinceRxMs=10 maxWriteMs=22 decoderDroppedTotal=0 outputBuffersTotal=212 ended=true"
             val video = "Video: video stats rx=29.8fps shown=29.8fps maxGap=150ms kbps=4000 recoveries=0 touch2frame avg=85ms max=110ms n=3 touchSendMax=1ms"
-            SessionLogFile(folder.resolve("diplay.log")).use {
+            SessionLogFile(folder.resolve("leapcarplay.log")).use {
                 it.reset("started")
                 it.append(audio)
                 it.append(video)
             }
-            val report = folder.resolve("diplay.log").readText()
+            val report = folder.resolve("leapcarplay.log").readText()
             assertTrue(report.contains(audio))
             assertTrue(report.contains(video))
         } finally { folder.deleteRecursively() }
@@ -31,25 +31,25 @@ class DiagnosticRedactorTest {
         assertFalse(line.contains("C0:A6")); assertFalse(line.contains("192.168")); assertFalse(line.contains("012345")); assertFalse(line.contains("fe80"))
     }
     @Test fun logRotationIsBoundedAndRedactionHappensBeforeDisk() {
-        val folder = Files.createTempDirectory("diplay-log-test").toFile()
+        val folder = Files.createTempDirectory("leapcarplay-log-test").toFile()
         try {
-            val log = SessionLogFile(folder.resolve("diplay.log"))
+            val log = SessionLogFile(folder.resolve("leapcarplay.log"))
             log.reset("started")
             log.append("password=secret")
             repeat(1600) { log.append("connection state " + "x".repeat(690)) }
             log.append("CarPlay connected")
             log.close()
-            assertTrue(folder.resolve("diplay.log").length() <= SessionLogFile.MAX_BYTES + 701)
+            assertTrue(folder.resolve("leapcarplay.log").length() <= SessionLogFile.MAX_BYTES + 701)
             assertTrue(folder.resolve("previous.log").length() <= SessionLogFile.MAX_BYTES + 701)
-            assertTrue(folder.resolve("diplay.log").readText().contains("CarPlay connected"))
+            assertTrue(folder.resolve("leapcarplay.log").readText().contains("CarPlay connected"))
             assertFalse(folder.listFiles()!!.any { it.readText().contains("secret") })
         } finally { folder.deleteRecursively() }
     }
     @Test fun failuresSurviveLaterSuccessfulSessionsAndOldestHistoryExpires() {
-        val folder = Files.createTempDirectory("diplay-history-test").toFile()
+        val folder = Files.createTempDirectory("leapcarplay-history-test").toFile()
         try {
             repeat(10) { session ->
-                SessionLogFile(folder.resolve("diplay.log")).use {
+                SessionLogFile(folder.resolve("leapcarplay.log")).use {
                     it.reset("session=$session")
                     it.append(if (session == 3) "Wi-Fi P2P create rejected code=0" else "CarPlay connected")
                     it.append("password=secret")

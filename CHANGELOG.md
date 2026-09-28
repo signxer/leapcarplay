@@ -1,3 +1,10 @@
+# Unreleased — LeapCarPlay fork
+
+- Use distinct application IDs for the LeapCarPlay mobile and Automotive APKs. Existing DiPlay installs remain separate and require pairing/settings setup again.
+- Default new installations to 60 fps; retain the 30 fps option for devices that cannot sustain dual-screen output.
+- Keep the video decode queue bounded with constant-time frame accounting during normal frame submission.
+- Route CarPlay's alternate display stream to Android's selected HDMI2 presentation display.
+
 # 0.2.0 — BYD navigation and connection improvements
 
 - Standalone windshield HUD arrows, distance and street names on the verified DiLink5.1 firmware; no ADB, root or computer helper.

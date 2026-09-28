@@ -7,7 +7,7 @@ import android.content.Context
  * instrument cluster receives, so separate HUD/cluster switches cannot behave independently.
  */
 object BydOutputSettings {
-    private const val PREFS = "diplay_byd_outputs"
+    private const val PREFS = "leapcarplay_byd_outputs"
     private const val KEY_ENABLED = "navigation_enabled"
 
     fun enabled(context: Context): Boolean = prefs(context).getBoolean(KEY_ENABLED, true)

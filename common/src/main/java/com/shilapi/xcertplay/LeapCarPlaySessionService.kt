@@ -48,7 +48,7 @@ class LeapCarPlaySessionService : Service() {
         stopSelf()
     }
     companion object {
-        const val ACTION_STOP = "com.shihab.diplay.DISCONNECT"
-        private const val CHANNEL = "diplay_connection"
+        const val ACTION_STOP = "com.signxer.leapcarplay.DISCONNECT"
+        private const val CHANNEL = "leapcarplay_connection"
     }
 }
