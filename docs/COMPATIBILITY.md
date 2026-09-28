@@ -14,7 +14,7 @@ This public preview is an independent receiver, not an Apple-certified CarPlay a
 
 ## CarPlay secondary display
 
-When Android exposes a presentation display named HDMI2, DiPlay advertises it as CarPlay's optional cluster display and routes the alternate-screen stream to that display. If there is no HDMI2-named display, DiPlay uses the only available presentation display; when several unnamed presentation displays exist, it leaves the cluster output disabled. The iPhone controls the content of the alternate stream, so a connected display alone does not guarantee that every navigation app will send a map view to it. The main CarPlay screen remains on the head unit display.
+When Android exposes a presentation display named HDMI2, LeapCarPlay advertises it as CarPlay's optional cluster display and routes the alternate-screen stream to that display. If there is no HDMI2-named display, LeapCarPlay uses the only available presentation display; when several unnamed presentation displays exist, it leaves the cluster output disabled. The iPhone controls the content of the alternate stream, so a connected display alone does not guarantee that every navigation app will send a map view to it. The main CarPlay screen remains on the head unit display.
 
 ## BYD HUD and car hotspot
 

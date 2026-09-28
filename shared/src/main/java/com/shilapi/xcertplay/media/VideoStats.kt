@@ -56,7 +56,7 @@ internal class VideoStats(private val nanoTime: () -> Long = System::nanoTime) {
     }
 
     private companion object {
-        const val TAG = "DiPlay-VideoStats"
+        const val TAG = "LeapCarPlay-VideoStats"
         const val WINDOW_NS = 5_000_000_000L
         const val IDLE_GAP_NS = 2_000_000_000L // longer gaps are a static screen, not lag
     }

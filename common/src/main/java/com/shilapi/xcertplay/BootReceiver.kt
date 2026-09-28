@@ -11,7 +11,7 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         if (!AirPlayPersistence.loadAutoStartOnBoot(context)) return
 
-        val launch = Intent(context, DiPlayActivity::class.java).apply {
+        val launch = Intent(context, LeapCarPlayActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or

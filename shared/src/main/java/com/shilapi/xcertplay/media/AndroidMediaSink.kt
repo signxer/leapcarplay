@@ -1010,7 +1010,7 @@ private class AudioRenderer(
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192
         const val PREBUFFER_WRITE_CHUNK_BYTES = 2 * 1024
-        const val STATS_TAG = "DiPlay-AudioStats"
+        const val STATS_TAG = "LeapCarPlay-AudioStats"
         const val STATS_WINDOW_NS = 5_000_000_000L
         const val DECODED_BUFFER_LOG_INTERVAL = 50
     }

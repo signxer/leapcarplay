@@ -19,7 +19,7 @@ internal object BydStandaloneNavigationBridge {
         if (output != null && !started) {
             started = true
             Executors.newSingleThreadScheduledExecutor { task ->
-                Thread(task, "diplay-standalone-navi").apply { isDaemon = true }
+                Thread(task, "leapcarplay-standalone-navi").apply { isDaemon = true }
             }.scheduleWithFixedDelay(::tick, 0, 500, TimeUnit.MILLISECONDS)
         }
     }
@@ -43,7 +43,7 @@ internal object BydStandaloneNavigationBridge {
             if (frame == null) output?.clear()
             else output?.update(frame.icon, frame.roundaboutExit, frame.distanceMeters, frame.road)
         } catch (error: Exception) {
-            Log.w("DiPlay-Standalone", "HUD update/cleanup will retry", error)
+            Log.w("LeapCarPlay-Standalone", "HUD update/cleanup will retry", error)
         }
     }
 }

@@ -8,7 +8,7 @@ import java.io.File
 import java.security.MessageDigest
 
 /** Installs the private beta's experimental identity. It has no remote fallback. */
-internal object DiPlayBootstrap {
+internal object LeapCarPlayBootstrap {
     @Volatile private var ready = false
 
     @Synchronized fun ensure(context: Context) {
@@ -48,7 +48,7 @@ internal object DiPlayBootstrap {
     }
 }
 
-internal object DiPlayPreferences {
+internal object LeapCarPlayPreferences {
     private fun prefs(context: Context) = context.getSharedPreferences("diplay", Context.MODE_PRIVATE)
     fun phoneAddress(context: Context): String? = prefs(context).getString("phone_address", null)
     fun phoneName(context: Context): String = prefs(context).getString("phone_name", null) ?: "Your iPhone"

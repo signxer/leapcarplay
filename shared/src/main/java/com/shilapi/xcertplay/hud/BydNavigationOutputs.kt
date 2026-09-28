@@ -9,9 +9,9 @@ object BydNavigationOutputs {
     fun onAppOpened(context: Context) { if (BydStandaloneHudOutput.available(context)) start(context) }
     fun setDiagnosticHold(hold: Boolean) { BydStandaloneHudOutput.syntheticHold = hold }
     @Volatile private var useStandalone = false
-    private val standalone = NavigationOutputWorker("diplay-standalone-output", BydStandaloneNavigationBridge::clear)
-    private val hud = NavigationOutputWorker("diplay-hud-output", BydHudBridge::clear)
-    private val cluster = NavigationOutputWorker("diplay-cluster-output", BydClusterBridge::clear)
+    private val standalone = NavigationOutputWorker("leapcarplay-standalone-output", BydStandaloneNavigationBridge::clear)
+    private val hud = NavigationOutputWorker("leapcarplay-hud-output", BydHudBridge::clear)
+    private val cluster = NavigationOutputWorker("leapcarplay-cluster-output", BydClusterBridge::clear)
 
     fun start(context: Context) {
         val app = context.applicationContext

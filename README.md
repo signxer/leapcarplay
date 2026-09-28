@@ -1,12 +1,18 @@
-# DiPlay
+# LeapCarPlay
 
-**CarPlay for compatible Android head units.** Wired and wireless, with the familiar DiAuto interface. Independent app: `com.shihab.diplay`.
+**LeapCarPlay is a community fork of DiPlay/xcertplay**, adapted for Leapmotor Android head units with a separate CarPlay cluster display. The Android application ID remains `com.shihab.diplay` to preserve the existing Wi-Fi Direct namespace and integrations.
 
-[Download & website](https://shihabal3amri.github.io/DiPlay/) · [Release](https://github.com/shihabal3amri/DiPlay/releases/tag/v0.2.0) · [Report a problem](https://github.com/shihabal3amri/DiPlay/issues/new/choose)
+[Source code](https://github.com/signxer/leapcarplay) · [Report a problem](https://github.com/signxer/leapcarplay/issues/new/choose)
 
-![DiPlay home](site/assets/home.png)
+![LeapCarPlay home](site/assets/home.png)
 
-## 0.2.0 — public preview
+## Leapmotor secondary display
+
+When Android exposes an HDMI2 presentation display, LeapCarPlay advertises CarPlay's optional cluster stream and renders it on that display. The iPhone and navigation app control whether map content is sent to the cluster. See [compatibility notes](docs/COMPATIBILITY.md).
+
+This fork does not yet publish a LeapCarPlay APK release. Build instructions are in [docs/BUILD.md](docs/BUILD.md).
+
+## Upstream 0.2.0 preview notes
 
 Install on the **car**, not the iPhone. No jailbreak, dongle, Mac, account or authentication server is required for use. ADB is not needed during everyday use; your head unit must permit APK installation. Wireless supports Wi-Fi Direct or the car’s existing hotspot; Wi-Fi Direct requires Android 10+; the APK supports Android 9+ for wired use.
 
@@ -18,7 +24,7 @@ Install on the **car**, not the iPhone. No jailbreak, dongle, Mac, account or au
 - Local diagnostic export. Reports are sent only if you choose to share them.
 - Separate installation alongside DiAuto. Run one projection app at a time.
 
-This is **not an Apple-certified product**. The APK bundles an experimental accessory identity recovered from public Carlinkit firmware, not a newly provisioned MFi identity for DiPlay. A bundled private key is extractable. Acceptance after future iOS updates, reliability across head units and suitability of that identity for general distribution are unresolved. This release invites community testing; it is not a guarantee of universal compatibility.
+This is **not an Apple-certified product**. The APK bundles an experimental accessory identity recovered from public Carlinkit firmware, not a newly provisioned MFi identity for LeapCarPlay. A bundled private key is extractable. Acceptance after future iOS updates, reliability across head units and suitability of that identity for general distribution are unresolved. This release invites community testing; it is not a guarantee of universal compatibility.
 
 The release changes were tested on the development DiLink5.1 car: live windshield guidance and street names work, Car hotspot now starts CarPlay, and Wi-Fi Direct performance is substantially improved. Occasional audio cutouts remain and are deferred to a later update. Broader head-unit and iOS compatibility is not guaranteed. The HUD firmware scope and cleanup limits are documented in [BYD navigation](docs/BYD_NAVIGATION.md).
 

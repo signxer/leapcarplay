@@ -36,7 +36,7 @@ import java.util.Date
 import java.util.Locale
 
 /** DiAuto's visual language, with a connection flow for an independent CarPlay receiver. */
-class DiPlayActivity : ComponentActivity() {
+class LeapCarPlayActivity : ComponentActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var page = "home"
     private var setupError: String? = null
@@ -56,7 +56,7 @@ class DiPlayActivity : ComponentActivity() {
         override fun run() { refreshStatus(); handler.postDelayed(this, 1000) }
     }
     private val bluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) choosePhone() else permissionHelp("Nearby devices", "Allow Nearby devices so DiPlay can connect to your paired iPhone.")
+        if (granted) choosePhone() else permissionHelp("Nearby devices", "Allow Nearby devices so LeapCarPlay can connect to your paired iPhone.")
     }
     private val export = registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) exportDiagnostics(uri)
@@ -71,8 +71,8 @@ class DiPlayActivity : ComponentActivity() {
             isAppearanceLightStatusBars = false
             hide(WindowInsetsCompat.Type.statusBars())
         }
-        setupError = runCatching { DiPlayBootstrap.ensure(this) }.exceptionOrNull()?.let {
-            "Local setup could not finish. Reinstall the complete DiPlay beta APK and try again."
+        setupError = runCatching { LeapCarPlayBootstrap.ensure(this) }.exceptionOrNull()?.let {
+            "Local setup could not finish. Reinstall the complete LeapCarPlay beta APK and try again."
         }
         page = savedInstanceState?.getString("page") ?: intent.getStringExtra("page") ?: "home"
         render()
@@ -99,7 +99,7 @@ class DiPlayActivity : ComponentActivity() {
         if (initialLaunch) {
             initialLaunch = false
             if (setupError == null && !CarPlayBackgroundSession.hasSession() &&
-                DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null) {
+                LeapCarPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null) {
                 handler.post { connect(AirPlayPersistence.loadWirelessEnabled(this)) }
             }
         }
@@ -113,7 +113,7 @@ class DiPlayActivity : ComponentActivity() {
         scroll.addView(content)
         val header = row().apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(ImageView(this).apply { setImageResource(R.drawable.ic_carplay); contentDescription = "CarPlay" }, LinearLayout.LayoutParams(dp(36), dp(36)))
-        header.addView(label("DiPlay", 26, TEXT, true).apply { setPadding(dp(12), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+        header.addView(label("LeapCarPlay", 26, TEXT, true).apply { setPadding(dp(12), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         header.addView(button(if (page == "home") "Car home" else "Back", false) {
             if (page == "home") startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME))
             else { page = "home"; render() }
@@ -169,7 +169,7 @@ class DiPlayActivity : ComponentActivity() {
         right.addView(button("Connect with USB", false) { connect(false) }, matchButton())
         right.addView(label("Plug your iPhone into a USB data port.\nAllow CarPlay when your iPhone asks.", 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
         right.addView(button("Settings", false) { page = "settings"; render() }, matchButton())
-        right.addView(label("Make DiPlay feel right for your car.", 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
+        right.addView(label("Make LeapCarPlay feel right for your car.", 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
         right.addView(label("PUBLIC PREVIEW  ·  ${version()}", 12, MUTED).apply { letterSpacing = .08f })
         if (wide) {
             // Both rows share column widths. The USB button starts at the wireless
@@ -200,9 +200,9 @@ class DiPlayActivity : ComponentActivity() {
         content.addView(label("Your drive, your way.", 34, TEXT, true))
         content.addView(label("Apply reconnects CarPlay for size, resolution, music buffer and frame rate. Other changes apply to your next connection.", 17, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
         section(content, "Automatic connection") { card ->
-            toggle(card, "Connect when DiPlay opens", "Use your last connection type and selected iPhone.", DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
+            toggle(card, "Connect when LeapCarPlay opens", "Use your last connection type and selected iPhone.", LeapCarPlayPreferences.autoConnect(this)) { LeapCarPlayPreferences.saveAutoConnect(this, it) }
             toggle(card, "Open after the car starts", "Availability depends on your head unit’s startup settings.", AirPlayPersistence.loadAutoStartOnBoot(this)) { AirPlayPersistence.saveAutoStartOnBoot(this, it) }
-            card.addView(button("Choose iPhone · ${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12, 60))
+            card.addView(button("Choose iPhone · ${LeapCarPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12, 60))
         }
         section(content, "Wireless connection") { card -> wirelessLinkControls(card) }
         section(content, "Display and performance") { card ->
@@ -232,36 +232,36 @@ class DiPlayActivity : ComponentActivity() {
             card.addView(button("Wireless connection help", false) { wirelessHelp() }, matchButton(10, 60))
         }
         section(content, "About and diagnostics") { card ->
-            card.addView(button("About DiPlay", false) { page = "about"; render() }, matchButton(0, 60))
+            card.addView(button("About LeapCarPlay", false) { page = "about"; render() }, matchButton(0, 60))
             exportButton = button(if (exportInProgress) "Saving report…" else "Save diagnostic report", false) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) exportDiagnostics()
                 else chooseReportDestination()
             }.apply { isEnabled = !exportInProgress }
             card.addView(exportButton, matchButton(10, 60))
-            val destination = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Reports save to Downloads/DiPlay. " else "Choose where to save your report. "
+            val destination = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Reports save to Downloads/LeapCarPlay. " else "Choose where to save your report. "
             card.addView(label(destination + "Nothing is sent automatically. Protocol payloads and credentials are excluded.", 14, MUTED).apply { setPadding(0, dp(12), 0, 0) })
         }
     }
 
     private fun about(content: LinearLayout) {
-        content.addView(label("DiPlay", 40, TEXT, true))
+        content.addView(label("LeapCarPlay", 40, TEXT, true))
         content.addView(label("CarPlay, at home in your car.", 20, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
         section(content, "Public preview · ${version()}") { card ->
             card.addView(label("An independent CarPlay receiver for Android head units. Wired and wireless connections run on the head unit, with local authentication. A standard iPhone can connect without a jailbreak, Mac, dongle or sign-in.\n\nThis preview uses an experimental accessory identity. Compatibility with every iPhone and head unit is still being tested. It is not an Apple-certified product.", 17, TEXT))
         }
         section(content, "Made possible by open source") { card ->
-            card.addView(label("Receiver based on xcertplay, licensed under GPL-3.0. DiPlay’s interface follows DiAuto’s design, licensed under AGPL-3.0.\n\nIncludes AndroidX, Bouncy Castle, JmDNS and SLF4J. Source and license notices accompany this release.\n\nCarPlay and the CarPlay icon belong to Apple Inc. DiPlay is an independent project.", 16, MUTED))
+            card.addView(label("Receiver based on xcertplay, licensed under GPL-3.0. LeapCarPlay’s interface follows DiAuto’s design, licensed under AGPL-3.0.\n\nIncludes AndroidX, Bouncy Castle, JmDNS and SLF4J. Source and license notices accompany this release.\n\nCarPlay and the CarPlay icon belong to Apple Inc. LeapCarPlay is an independent project.", 16, MUTED))
         }
     }
 
-    // The car hotspot link needs the hotspot on; DiPlay only checks it (turning it on needs ADB-only permission).
+    // The car hotspot link needs the hotspot on; LeapCarPlay only checks it (turning it on needs ADB-only permission).
     private fun carHotspotOff(): Boolean =
         AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL &&
             com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(this) == false
 
     private fun carHotspotOffDialog() {
         AlertDialog.Builder(this).setTitle("Car hotspot is off")
-            .setMessage("DiPlay connects through the car hotspot “${AirPlayPersistence.loadManualHotspotSsid(this)}”. Turn it on in the car settings, then connect.")
+            .setMessage("LeapCarPlay connects through the car hotspot “${AirPlayPersistence.loadManualHotspotSsid(this)}”. Turn it on in the car settings, then connect.")
             .setPositiveButton("Open car settings") { _, _ -> openCarWifiSettings() }
             .setNeutralButton("Connect") { _, _ -> connect(true) }
             .setNegativeButton("Cancel", null).show()
@@ -308,7 +308,7 @@ class DiPlayActivity : ComponentActivity() {
         }
         parent.addView(control, matchButton(0, 60)); parent.addView(space(12))
         if (!carHotspot) {
-            parent.addView(label("DiPlay creates its own Wi-Fi Direct network for the iPhone.", 14, MUTED).apply {
+            parent.addView(label("LeapCarPlay creates its own Wi-Fi Direct network for the iPhone.", 14, MUTED).apply {
                 setPadding(0, 0, 0, dp(18))
             })
             return
@@ -393,7 +393,7 @@ class DiPlayActivity : ComponentActivity() {
     private fun connect(wireless: Boolean) {
         if (setupError != null) { toast(setupError!!); return }
         if (wireless && carHotspotOff()) { carHotspotOffDialog(); return }
-        if (wireless && DiPlayPreferences.phoneAddress(this) == null) {
+        if (wireless && LeapCarPlayPreferences.phoneAddress(this) == null) {
             pendingWireless = true; choosePhone(); return
         }
         val preferences = getSharedPreferences("diplay", MODE_PRIVATE)
@@ -427,7 +427,7 @@ class DiPlayActivity : ComponentActivity() {
         val devices = runCatching { adapter.bondedDevices.sortedBy { it.name ?: "" } }.getOrDefault(emptyList())
         if (devices.isEmpty()) {
             AlertDialog.Builder(this).setTitle("Pair your iPhone")
-                .setMessage("On your iPhone, open Settings → Bluetooth and pair with the car. Then return to DiPlay and choose Connect phone.")
+                .setMessage("On your iPhone, open Settings → Bluetooth and pair with the car. Then return to LeapCarPlay and choose Connect phone.")
                 .setPositiveButton("Open Bluetooth") { _, _ -> openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
                 .setNegativeButton("Got it", null).show(); return
         }
@@ -437,7 +437,7 @@ class DiPlayActivity : ComponentActivity() {
                 if (devices.count { it.name == device.name } > 1) "$name · ${device.address.takeLast(5)}" else name
             }.toTypedArray()) { _, index ->
                 val device = devices[index]
-                DiPlayPreferences.savePhone(this, device.address, device.name ?: "iPhone")
+                LeapCarPlayPreferences.savePhone(this, device.address, device.name ?: "iPhone")
                 val start = pendingWireless; pendingWireless = false
                 render()
                 if (start) connect(true)
@@ -505,7 +505,7 @@ class DiPlayActivity : ComponentActivity() {
             setupError != null -> "Setup needs attention"
             CarPlayBackgroundSession.active -> "CarPlay connected"
             running -> "Connecting to your iPhone…"
-            DiPlayPreferences.phoneAddress(this) != null -> "Ready for ${DiPlayPreferences.phoneName(this)}"
+            LeapCarPlayPreferences.phoneAddress(this) != null -> "Ready for ${LeapCarPlayPreferences.phoneName(this)}"
             else -> "Ready when you are"
         }
         if (lastRunning != running) {
@@ -516,7 +516,7 @@ class DiPlayActivity : ComponentActivity() {
         }
         connectButton?.isEnabled = setupError == null
     }
-    private fun reportFileName() = "DiPlay-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
+    private fun reportFileName() = "LeapCarPlay-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
 
     private fun chooseReportDestination() {
         // Some head units omit or disable DocumentsUI. Launch itself can throw, before
@@ -537,7 +537,7 @@ class DiPlayActivity : ComponentActivity() {
         Thread({
             val result = runCatching {
                 val report = buildString {
-                    appendLine("DiPlay ${version()} · private beta diagnostic report")
+                    appendLine("LeapCarPlay ${version()} · private beta diagnostic report")
                     appendLine("Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
                     appendLine("Head unit: ${Build.MANUFACTURER} ${Build.MODEL}")
                     appendLine("Connection: ${if (AirPlayPersistence.loadWirelessEnabled(appContext)) "wireless" else "USB"}")
@@ -570,7 +570,7 @@ class DiPlayActivity : ComponentActivity() {
                 exportButton?.apply { isEnabled = true; text = "Save diagnostic report" }
                 if (result.isSuccess) {
                     AlertDialog.Builder(this).setTitle("Diagnostic report saved")
-                        .setMessage(if (uri == null) "Downloads/DiPlay/$fileName" else "Your report was saved to the selected location.")
+                        .setMessage(if (uri == null) "Downloads/LeapCarPlay/$fileName" else "Your report was saved to the selected location.")
                         .setPositiveButton("Done", null).show()
                 } else {
                     AlertDialog.Builder(this).setTitle("Could not save the report")
